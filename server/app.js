@@ -34,6 +34,9 @@ const valFunctions = require('./validators/validate');
 const jsonParser = bodyParser.json()
 // create application/x-www-form-urlencoded parser
 const urlencodedParser = bodyParser.urlencoded({ extended: false })
+
+app.use(bodyParser.json({limit: '50mb'}));
+app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
  
 // POST /login gets urlencoded bodies
 app.post('/signup', jsonParser, function (req, res) {
@@ -54,16 +57,18 @@ app.post('/login', jsonParser, function (req, res) {
     var dbFunctions = require('./models/connector');
     dbFunctions.loginUser(req,res);
 });
-app.get('/user', jsonParser, function (req, res) {
+app.get('/user/:userid', jsonParser, function (req, res) {
     //if(valFunctions.checkInputDataNULL(req,res)) return false;
     //if(valFunctions.checkInputDataQuality(req,res)) return false;
     //if(valFunctions.checkUserAuthRole(req,res)) return false;
+    let userid = req.params.userid;
     var dbFunctions = require('./models/connector');
     var userEmail = valFunctions.checkJWTToken(req,res);
     if(!userEmail) return false;
-    dbFunctions.getUser(userEmail,res);
+    dbFunctions.getUser(userEmail,userid,res);
 });
 app.post('/updateuser', jsonParser, function (req, res) {
+    console.log(req);
     if(valFunctions.checkInputDataNULL(req,res)) return false;
     if(valFunctions.checkInputDataQuality(req,res)) return false;
     //if(valFunctions.checkUserAuthRole(req,res)) return false;
@@ -90,5 +95,27 @@ app.get('/getlocation', jsonParser, function (req, res) {
     if(!userEmail) return false;
     dbFunctions.getLocation(userEmail,res);
 });
+app.get('/users/:offset/:limit', jsonParser, function (req, res) {
+    //if(valFunctions.checkInputDataNULL(req,res)) return false;
+    //if(valFunctions.checkInputDataQuality(req,res)) return false;
+    //if(valFunctions.checkUserAuthRole(req,res)) return false;
+    let offset = req.params.offset;
+    let limit = req.params.limit;
+
+    var dbFunctions = require('./models/connector');
+    var userEmail = valFunctions.checkJWTToken(req,res);
+    if(!userEmail) return false;
+    dbFunctions.getAllUser(userEmail,offset,limit,res);
+});
+app.get('/deleteuser/:userid', jsonParser, function (req, res) {
+    //if(valFunctions.checkInputDataNULL(req,res)) return false;
+    //if(valFunctions.checkInputDataQuality(req,res)) return false;
+    //if(valFunctions.checkUserAuthRole(req,res)) return false;
+    let userid = req.params.userid;
+    var dbFunctions = require('./models/connector');
+    var userEmail = valFunctions.checkJWTToken(req,res);
+    if(!userEmail) return false;
+    dbFunctions.deleteUser(userEmail,userid,res);
+});
 app.use('/', (req, res) => res.send("Welcome GPS Mobile Tracker App User !"));
-app.listen(process.env.PORT, () => console.log('Elish Enterprise Server is ready on localhost:' + process.env.PORT));
+app.listen(process.env.PORT, () => console.log('Server is ready on localhost:' + process.env.PORT));

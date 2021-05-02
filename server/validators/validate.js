@@ -21,6 +21,7 @@ module.exports = {
         token.replace('Bearer ', ''),
         process.env.JWT_SECRET
         );
+        console.log(decoded);
         resultsNotFound["errorMessage"] = "Your token in not valid, please logoff and login again.";
         if (!decoded) return res.send(resultsNotFound);
         return decoded.email;

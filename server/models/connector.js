@@ -24,7 +24,7 @@ module.exports = {
 
       password(req.body.inputPassword).hash(function (error, hash) {
         var sql = 'INSERT INTO user SET ?';
-        var values = { 'name': req.body.inputEmail, 'email': req.body.inputEmail, 'password': hash, 'createdAt': new Date(), 'updatedAt': new Date() }
+        var values = { 'first_name': req.body.inputFirstName,'last_name': req.body.inputLastName, 'email': req.body.inputEmail, 'password': hash, 'createdAt': new Date(), 'updatedAt': new Date() }
         // Use the connection
         connection.query(sql, values, function (error, results, fields) {
           if (error) {
@@ -58,13 +58,14 @@ module.exports = {
           }
           password(req.body.inputPassword).verifyAgainst(results[0].password, function (error, verified) {
           //bcrypt.compare(req.body.inputPassword, results[0].password, function (err, result) {
-      if (result == true) {
+      if (verified == true) {
         var token = {
           "token": jwt.sign(
             { email: req.body.inputEmail },
             process.env.JWT_SECRET,
             { expiresIn: '30d' }
-          )
+          ),
+          "info":{"firstName" : results[0].first_name, "lastName" : results[0].last_name}
         }
         resultsFound["data"] = token;
         res.send(resultsFound);
@@ -72,6 +73,7 @@ module.exports = {
         resultsNotFound["errorMessage"] = "Incorrect Password.";
         return res.send(resultsNotFound);
       }
+      
     });
 
           // When done with the connection, release it.
@@ -80,14 +82,14 @@ module.exports = {
         });
       });
   },
-  getUser: function (input, res) {
+  getUser: function (input,userid, res) {
     pool.getConnection(function (err, connection) {
       if (err) throw err; // not connected!
 
-        var sql = 'SELECT * FROM `user` WHERE `email` = ?';
-        var values = [input]
+        var sql = 'SELECT first_name,last_name,email FROM user WHERE `id` = ?';
+        var values = [userid]
         // Use the connection
-        connection.query(sql, values, function (error, results, fields) {
+        connection.query(sql,values, function (error, results, fields) {
           if (error) {
             resultsNotFound["errorMessage"] = "Something went wrong with Server.";
             return res.send(resultsNotFound);
@@ -96,6 +98,7 @@ module.exports = {
             resultsNotFound["errorMessage"] = "User Id not found.";
             return res.send(resultsNotFound);
           }
+          console.log(results);
           resultsFound["data"] = results[0];
           res.send(resultsFound);
           // When done with the connection, release it.
@@ -111,7 +114,7 @@ module.exports = {
       password(req.body.inputPassword).hash(function (error, hash) {
       //bcrypt.hash(req.body.inputPassword, saltRounds, function (err, hash) {
         var sql = 'UPDATE user SET ? WHERE `email` = ?';
-        var values = { 'name': req.body.name, 'email': req.body.inputEmail, 'password': hash, 'question': req.body.question,'answer': req.body.answer, 'updatedAt': new Date() }
+        var values = { 'first_name': req.body.first_name,'last_name': req.body.last_name, 'email': req.body.inputEmail, 'password': hash,  'updatedAt': new Date() }
         // Use the connection
         connection.query(sql, [values, userEmail], function (error, results, fields) {
           if (error) {
@@ -171,4 +174,59 @@ module.exports = {
         });
       });
   },
+  getAllUser: function (input,offset,limit, res) {
+    pool.getConnection(function (err, connection) {
+      if (err) throw err; // not connected!
+             // return db.query("SELECT * FROM products LIMIT ?, ?", [+offset, +limit], cb)
+          var pageLimit = offset + ',' + limit;
+
+         // console.log(pageLimit)
+           //       console.log('Majj')
+
+        var sql = "SELECT id,first_name,last_name,email FROM user LIMIT "+pageLimit;
+       // var values = [offset,offset]
+        // Use the connection
+        connection.query(sql,function (error, results, fields) {
+          if (error) {
+            resultsNotFound["errorMessage"] = "Something went wrong with Server.";
+            return res.send(resultsNotFound);
+          }
+          if (results =="") {
+            resultsNotFound["errorMessage"] = "User Id not found.";
+            return res.send(resultsNotFound);
+          }
+          resultsFound["data"] = results;
+          res.send(resultsFound);
+          // When done with the connection, release it.
+          connection.release(); // Handle error after the release.
+          if (error) throw error; // Don't use the connection here, it has been returned to the pool.
+        });
+      });
+  },
+  deleteUser: function (input,userid, res) {
+    pool.getConnection(function (err, connection) {
+      if (err) throw err; // not connected!
+
+        var sql = 'DELETE FROM user WHERE `id` = ?';
+        var values = [userid]
+        // Use the connection
+        connection.query(sql,values, function (error, results, fields) {
+          if (error) {
+            resultsNotFound["errorMessage"] = "Something went wrong with Server.";
+            return res.send(resultsNotFound);
+          }
+          if (results =="") {
+            resultsNotFound["errorMessage"] = "User Id not found.";
+            return res.send(resultsNotFound);
+          }
+          console.log(results);
+          resultsNotFound["successMessage"] = "User deleted successfully";
+          resultsFound["data"] = "";
+          res.send(resultsFound);
+          // When done with the connection, release it.
+          connection.release(); // Handle error after the release.
+          if (error) throw error; // Don't use the connection here, it has been returned to the pool.
+        });
+      });
+  }
 };
